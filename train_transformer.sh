@@ -11,6 +11,7 @@ CUDA_VISIBLE_DEVICES=$GPU fairseq-train \
     --save-dir checkpoints/$save_tag \
     --max-update 25000 --save-interval-updates 2000  --validate-interval 3 \
     --keep-interval-updates 40 \
+    --keep-best-checkpoints 10 \
     --lr 5e-4 --lr-scheduler inverse_sqrt --warmup-updates 4000 \
     --weight-decay 0.0001 \
     --criterion label_smoothed_cross_entropy --label-smoothing 0.1 --dropout 0.3 \

@@ -1,6 +1,6 @@
 # Chinese Hip-pop Generation
 
-Assignment for PKU Deep Generative Model 2021 spring.
+Project for PKU Deep Generative Models 2021 spring.
 
 Achieve Chinese Hip-pop Generation with [Vanilla Transformer](https://arxiv.org/abs/1706.03762).
 
@@ -8,12 +8,17 @@ Achieve Chinese Hip-pop Generation with [Vanilla Transformer](https://arxiv.org/
 
 ### Dataset
 
+| Dataset | # Examples | Avg Length (src/tgt) | Max Length (src/tgt) |
+| ----------- | ---------- | ------------------ | ------------------ |
+| Train       | 86,906    |       |             |
+| Dev         | 4,828     |       |            |
+| Test        | 4,828     |       |           |
 
 ## Prepare environment
 
 ```
-conda create -n hipppop python=3.6
-conda activate hipppop
+conda create -n hippop python=3.6
+conda activate hippop
 conda install pytorch torchvision cudatoolkit=10.0 -c https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch
 pip install -r requirements.txt 
 ```
