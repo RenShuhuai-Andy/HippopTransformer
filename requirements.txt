@@ -25,3 +25,4 @@ typing-extensions==3.7.4.3
 zipp==3.4.0
 pandas==1.1.5
 xlrd==2.0.1
+subword-nmt==0.3.7

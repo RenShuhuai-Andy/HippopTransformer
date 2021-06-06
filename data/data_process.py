@@ -63,7 +63,7 @@ def data_process(file_dir, data_type):
             inputf.write(input_output_pair[0].strip() + '\n')
             # zh_words = list(jieba.cut(en_zh_pair[1]))
             # zf.write(' '.join(zh_words) + '\n')
-            outputf.write(input_output_pair[1].replace(' 。', '').strip() + '\n')
+            outputf.write(input_output_pair[1].replace('。', '').strip() + '\n')
     print('skip_cnt in %s is %d' % (data_type, skip_cnt))
 
 
