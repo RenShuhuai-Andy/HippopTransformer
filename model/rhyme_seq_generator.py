@@ -8,7 +8,6 @@ from fairseq import search, utils
 from fairseq.data import data_utils
 from fairseq.models import FairseqIncrementalDecoder
 from torch import Tensor
-from fairseq.ngram_repeat_block import NGramRepeatBlock
 from fairseq.sequence_generator import SequenceGenerator
 
 
@@ -20,7 +19,6 @@ class RhymeSequenceGenerator(SequenceGenerator):
             beam_size=1,
             max_len_a=0,
             max_len_b=200,
-            max_len=0,
             min_len=1,
             normalize_scores=True,
             len_penalty=1.0,
@@ -63,7 +61,6 @@ class RhymeSequenceGenerator(SequenceGenerator):
                                                      beam_size,
                                                      max_len_a,
                                                      max_len_b,
-                                                     max_len,
                                                      min_len,
                                                      normalize_scores,
                                                      len_penalty,
@@ -76,9 +73,10 @@ class RhymeSequenceGenerator(SequenceGenerator):
                                                      symbols_to_strip_from_output,
                                                      lm_model,
                                                      lm_weight, )
-        self.rhyme_table = torch.tensor(rhyme_table)  # mask matrix for rhymed token generation
+        self.rhyme_table = torch.tensor(self.rhyme_table)
+        # self.rhyme_table = rhyme_table  # mask matrix for rhymed token generation
 
-    def _generate(
+    def _generate_old(
             self,
             sample: Dict[str, Dict[str, Tensor]],
             prefix_tokens: Optional[Tensor] = None,
@@ -136,7 +134,8 @@ class RhymeSequenceGenerator(SequenceGenerator):
         else:
             max_len = min(
                 int(self.max_len_a * src_len + self.max_len_b),
-                self.max_len - 1,
+                # exclude the EOS marker
+                self.model.max_decoder_positions() - 1,
             )
         assert (
                 self.min_len <= max_len
@@ -232,7 +231,8 @@ class RhymeSequenceGenerator(SequenceGenerator):
                 last_token_index = src_tokens[:, 0].unsqueeze(1)  # bsz, 1
                 last_token_index = last_token_index.repeat_interleave(beam_size, 1).view(-1)  # bsz * beam_size
                 # 1 indicate can be selected for rhymed generation, 0 indicate not
-                rhyme_mask = torch.index_select(self.rhyme_table, 0, last_token_index)  # bsz * beam_size, vocab_size
+                rhyme_mask = torch.index_select(torch.tensor(self.rhyme_table).to(last_token_index.device), 0,
+                                                last_token_index)  # bsz * beam_size, vocab_size
                 # mask lprobs with rhyme
                 lprobs = torch.where(rhyme_mask == 0, torch.tensor(-math.inf).to(lprobs), lprobs)
             ## Rhyme Masking Mechanism ##
@@ -287,8 +287,8 @@ class RhymeSequenceGenerator(SequenceGenerator):
             if self.should_set_src_lengths:
                 self.search.set_src_lengths(src_lengths)
 
-            if self.repeat_ngram_blocker is not None:
-                lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
+            if self.no_repeat_ngram_size > 0:
+                lprobs = self._no_repeat_ngram(tokens, lprobs, bsz, beam_size, step)
 
             # Shape: (batch, cand_size)
             cand_scores, cand_indices, cand_beams = self.search.step(
@@ -462,7 +462,7 @@ class RhymeSequenceGenerator(SequenceGenerator):
             )
         return finalized
 
-    def _generate_origin(
+    def _generate(
             self,
             sample: Dict[str, Dict[str, Tensor]],
             prefix_tokens: Optional[Tensor] = None,
@@ -638,7 +638,9 @@ class RhymeSequenceGenerator(SequenceGenerator):
                 last_token_index = src_tokens[:, 0].unsqueeze(1)  # bsz, 1
                 last_token_index = last_token_index.repeat(1, beam_size).view(-1)  # bsz * beam_size
                 # 1 indicate can be selected for rhymed generation, 0 indicate not
-                rhyme_mask = torch.index_select(self.rhyme_table, 0, last_token_index)  # bsz * beam_size, vocab_size
+                rhyme_mask = torch.index_select(self.rhyme_table.to(last_token_index.device), 0,
+                                                last_token_index)
+                # rhyme_mask = torch.index_select(self.rhyme_table, 0, last_token_index)  # bsz * beam_size, vocab_size
                 # mask lprobs with rhyme
                 lprobs = torch.where(rhyme_mask == 0, torch.tensor(-math.inf).to(lprobs), lprobs)
             ## Rhyme Masking Mechanism ##
