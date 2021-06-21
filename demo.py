@@ -7,12 +7,13 @@ hippop_generator = OurTransformerModel.from_pretrained(
     data_name_or_path='data/data-bin',
     bpe='subword_nmt',
     bpe_codes='data/src_tgt/code',
+    task='hippop'
 )
 while True:
     src = input('Input the hip-pop lyric: \n')
     src = list(jieba.cut(src))
     src.reverse()
-    tgt = hippop_generator.translate(src).split(' ')
+    tgt = hippop_generator.translate(' '.join(src)).split(' ')
     tgt.reverse()
     print('Continuation:')
     print(''.join(tgt))
