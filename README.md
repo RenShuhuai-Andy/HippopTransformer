@@ -28,6 +28,7 @@ pip install -r requirements.txt
 ```
 bash scripts/prepare-lyric.sh
 sh scripts/process.sh
+ppython data/generate_rhyme_table.py
 ```
 
 ## Train

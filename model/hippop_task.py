@@ -15,4 +15,4 @@ class HippopTask(TranslationTask):
             self, models, args, seq_gen_cls=None, extra_gen_cls_kwargs=None
     ):
         return super(HippopTask, self).build_generator(models, args, seq_gen_cls=RhymeSequenceGenerator,
-                                                extra_gen_cls_kwargs={'rhyme_table': self.rhyme_table})
+                                                       extra_gen_cls_kwargs={'rhyme_table': self.rhyme_table})

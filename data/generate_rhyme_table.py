@@ -46,7 +46,7 @@ data_for_finals = [
     ['儿', dict(style=FINALS), ['er']],
 ]
 
-with open("dict.tgt.txt", 'r') as f:
+with open("data/data-bin/dict.tgt.txt", 'r') as f:
     lines = f.readlines()
     for l in lines:
         line, field = l.rsplit(" ", 1)
@@ -85,4 +85,4 @@ print(rhyme_matrix[:20, :20])
 for i in range(20):
     print(i, idx2word[i])
 # np.save("rhyme_table.npy", rhyme_matrix)
-np.savez_compressed("rhyme_table.npz", rhyme_matrix)
+np.savez_compressed("data/rhyme_table.npz", rhyme_matrix)

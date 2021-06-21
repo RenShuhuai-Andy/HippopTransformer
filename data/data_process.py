@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import random
 
 
 def data_preprocess():
@@ -23,6 +24,10 @@ def data_preprocess():
     dev_pair_len = int(single_len * 0.05)
     test_pair_len = int(single_len * 0.05)
     print('train num: %d, dev num: %d, test num: %d' % (train_pair_len, dev_pair_len, test_pair_len))
+
+    lyric_list = [[lyric_list[i], lyric_list[i+1]] for i in range(0, single_len-1, 2)]
+    random.shuffle(lyric_list)
+    lyric_list = sum(lyric_list, [])
 
     pair = []
     with open(r'data/dataset/total_train.txt', 'w', encoding='utf-8') as f:
