@@ -1,24 +1,19 @@
 from model.transformer import OurTransformerModel
-from model.hippop_task import HippopTask
-import numpy as np
+import jieba
 
-# load rhyme table
-rhyme_table = np.load("data/rhyme_table.npz")['arr_0']
-
-hippop_task = HippopTask()
 hippop_generator = OurTransformerModel.from_pretrained(
     'checkpoints/transformer_base/',
     checkpoint_file='checkpoint_best.pt',
     data_name_or_path='data/data-bin',
     bpe='subword_nmt',
     bpe_codes='data/src_tgt/code',
-    # task='hippop',
-    task=HippopTask,
-    rhyme_table=rhyme_table
 )
 while True:
-    src = input('please input the src: \n')
+    src = input('Input the hip-pop lyric: \n')
+    src = list(jieba.cut(src))
+    src.reverse()
     tgt = hippop_generator.translate(src).split(' ')
     tgt.reverse()
-    print('tgt:')
+    print('Continuation:')
     print(''.join(tgt))
+    print('\n')

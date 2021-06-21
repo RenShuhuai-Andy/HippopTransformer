@@ -26,24 +26,31 @@ pip install -r requirements.txt
 ## Process data
 
 ```
-bash prepare-lyric.sh
-sh process.sh
+bash scripts/prepare-lyric.sh
+sh scripts/process.sh
 ```
 
 ## Train
 
 ```
-sh train_transformer.sh
+sh scripts/train_transformer.sh
 ```
 
 ## Evaluation
 
 ```
-sh evaluate.sh -m transformer_base -c 0 -n 10
+sh scripts/evaluate.sh -m transformer_base -c 0 -n 10
 ```
 - `-m` denotes the model architecture.
 - `-c` denotes the index of CUDA device.
 - `-n` denotes the number of checkpoints for average.
+
+## Interactive
+`fairseq-interactive data/data-bin --user-dir model --task hippop --path checkpoints/transformer_base/checkpoint_best.pt`
+ 
+ or
+ 
+`python demo.py`
 
 ## Model Architecture
 |Model Architecture| Transformer-Base | Transformer-Large|
@@ -58,5 +65,4 @@ sh evaluate.sh -m transformer_base -c 0 -n 10
 |Decoder Layer Number |4 |6|
 
 ## Result
-
 
