@@ -27,3 +27,6 @@ pandas==1.1.5
 xlrd==2.0.1
 subword-nmt==0.3.7
 pypinyin==0.42.0
+flask
+flask-wtf
+flask-pagedown

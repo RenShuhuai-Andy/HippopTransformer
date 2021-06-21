@@ -25,6 +25,7 @@ hippop_generator = OurTransformerModel.from_pretrained(
 )
 print('loading finished')
 
+
 class PageDownFormExample(FlaskForm):
     pagedown = PageDownField('进行生成')
     submit = SubmitField('开始创作!')

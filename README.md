@@ -28,7 +28,7 @@ pip install -r requirements.txt
 ```
 bash scripts/prepare-lyric.sh
 sh scripts/process.sh
-ppython data/generate_rhyme_table.py
+python data/generate_rhyme_table.py
 ```
 
 ## Train
@@ -47,11 +47,8 @@ sh scripts/evaluate.sh -m transformer_base -c 0 -n 10
 - `-n` denotes the number of checkpoints for average.
 
 ## Interactive
-`fairseq-interactive data/data-bin --user-dir model --task hippop --path checkpoints/transformer_base/checkpoint_best.pt`
- 
- or
- 
-`python demo.py`
+
+`python local_demo.py`
 
 ## Model Architecture
 |Model Architecture| Transformer-Base | Transformer-Large|
