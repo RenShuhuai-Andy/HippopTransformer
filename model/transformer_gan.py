@@ -1,32 +1,53 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#   http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
+sys.path.append("utils")
+from transformers import (
+    BertConfig,
+    BertForMaskedLM,
+    PreTrainedTokenizer,
+    PreTrainedModel,
+    AdamW,
+    BertForSequenceClassification
+)
+from fairseq.models.transformer import TransformerModel, base_architecture
+from model.transformer import transformer_base_architecture
 from fairseq import utils
-from fairseq.models.transformer import TransformerModel, TransformerEncoder, TransformerDecoder, base_architecture
 from fairseq.models import (
     register_model,
     register_model_architecture,
 )
 
+dis_filter_sizes = [2, 3, 4, 5]
+dis_num_filters = [300, 300, 300, 300]
 DEFAULT_MAX_SOURCE_POSITIONS = 1024
 DEFAULT_MAX_TARGET_POSITIONS = 1024
 
 
-@register_model("our_transformer")
-class OurTransformerModel(TransformerModel):
-    """
-    Transformer model from `"Attention Is All You Need" (Vaswani, et al, 2017)
-    <https://arxiv.org/abs/1706.03762>`_.
-    Args:
-        encoder (TransformerEncoder): the encoder
-        decoder (TransformerDecoder): the decoder
-    The Transformer model provides the following named architectures and
-    command-line arguments:
-    .. argparse::
-        :ref: fairseq.models.transformer_parser
-        :prog:
-    """
+# dis_filter_sizes = [5]
+# dis_num_filters = [300]
 
+@register_model("transformer_gan")
+class TransformerGAN(TransformerModel):
     def __init__(self, args, encoder, decoder):
         super().__init__(args, encoder, decoder)
+        self.temperature = 1
 
     @staticmethod
     def add_args(parser):
@@ -111,13 +132,22 @@ class OurTransformerModel(TransformerModel):
                             help='block size of quantization noise at training time')
         parser.add_argument('--quant-noise-scalar', type=float, metavar='D', default=0,
                             help='scalar quantization noise and scalar quantization at training time')
-        # args for printing score
-        parser.add_argument('--print-attn-score', default=False, action="store_true",
-                            help="Whether print attention score ")
+        # args discriminator
+        parser.add_argument('--discriminator_type', default='bert', type=str)
+        parser.add_argument('--discriminator_bert_model_path', default='checkpoints/bert-base-uncased/', type=str)
+        parser.add_argument('--discriminator_bert_loss_type', default='wgan-gp', type=str)
+        parser.add_argument('--discriminator_bert_model_type', default='bert', type=str)
+        parser.add_argument('--discriminator_bert_random_weights', default=None)
+        parser.add_argument('--discriminator_bert_freeze_layers', default=['0', '1', '2', '3', '4'])
         # fmt: on
 
     @classmethod
     def build_model(cls, args, task):
+        cls.build_discriminator(args, task)
+        return cls.build_generator(args, task)
+
+    @classmethod
+    def build_generator(cls, args, task):
         """Build a new model instance."""
 
         # make sure all arguments are present in older models
@@ -163,69 +193,169 @@ class OurTransformerModel(TransformerModel):
 
         encoder = cls.build_encoder(args, src_dict, encoder_embed_tokens)
         decoder = cls.build_decoder(args, tgt_dict, decoder_embed_tokens)
-        return cls(args, encoder, decoder)
+        cls.generator = cls(args, encoder, decoder)
+        return cls.generator
 
     @classmethod
-    def build_decoder(cls, args, tgt_dict, embed_tokens):
-        return OurTransformerDecoder(
-            args,
-            tgt_dict,
-            embed_tokens,
-            no_encoder_attn=getattr(args, "no_cross_attention", False),
+    def build_discriminator(cls, args, task):
+        """Build a new model instance."""
+
+        # Create discriminator
+        if args.discriminator_type == "bert":
+            # Can change d_embed
+            cls.discriminator = cls.create_bert_model(
+                args.discriminator_bert_model_path, args.discriminator_bert_loss_type,
+                args.discriminator_bert_model_type, args.discriminator_bert_random_weights
+            )
+            cls.discriminator.unfreeze_idx = cls.calculate_unfreeze_idx(args)
+        else:
+            cls.discriminator = None
+        cls.discriminator.cuda()
+        # return cls.discriminator
+
+    @classmethod
+    def create_bert_model(cls, model_name_or_path, loss_type, model_type=None, random_weights=False):
+
+        config_class = BertConfig
+        config = config_class.from_pretrained(model_name_or_path, cache_dir=None)
+
+        if model_type == "bert_lm":
+            if random_weights:
+                print("Starting from random")
+                model = BertForSequenceClassification(config=config)
+            else:
+                model_class = BertForMaskedLM
+                model_lm = model_class.from_pretrained(
+                    model_name_or_path,
+                    from_tf=bool(".ckpt" in model_name_or_path),
+                    config=config,
+                    cache_dir=None,
+                )
+                model = BertForSequenceClassification(config=config)
+                model.bert = model_lm.bert
+
+        else:
+            if random_weights:
+                raise NotImplementedError
+            model_class = BertForSequenceClassification
+            model = model_class.from_pretrained(
+                model_name_or_path,
+                from_tf=bool(".ckpt" in model_name_or_path),
+                config=config,
+                cache_dir=None,
+            )
+
+        return model.bert if loss_type == "mmd" else model
+
+    @classmethod
+    def calculate_unfreeze_idx(cls, args):
+        cn, unfreeze_idx, layers = 0, [], []
+        for name, param in cls.discriminator.named_parameters():
+            if name.startswith("bert.embeddings") and not args.discriminator_bert_random_weights:
+                pass
+            elif name.startswith("bert.encoder.layer") and name.split('.')[3] in args.discriminator_bert_freeze_layers:
+                pass
+            else:
+                unfreeze_idx.append(cn)
+            cn += 1
+
+            if name.startswith("bert.encoder.layer"):
+                layers.append(name.split('.')[3])
+
+        # check the total number of layers in the BERT >= the number of layers to be freeze
+        assert len(layers) >= len(args.discriminator_bert_freeze_layers)
+
+        return unfreeze_idx
+
+    def forward_generate_gumbel(
+            self,
+            src_tokens,
+            src_lengths,
+            prev_output_tokens,
+            return_all_hiddens: bool = False,
+            features_only: bool = True,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
+            temperature=1):  # TODO
+
+        from torch.autograd import Variable
+
+        # if data.device.index == 0 :
+        # print(data.device, data.shape, data[0].nonzero())
+
+        def sample_gumbel(shape, eps=1e-20):
+            U = torch.rand(shape).cuda()
+            return -Variable(torch.log(-torch.log(U + eps) + eps))
+
+        def gumbel_softmax_sample(logits, temperature):
+            y = logits + sample_gumbel(logits.size())
+            return F.softmax(y / temperature, dim=-1)
+
+        def gumbel_softmax(logits, temperature):
+            """
+            input: [*, n_class]
+            return: [*, n_class] an one-hot vector
+            """
+            y = gumbel_softmax_sample(logits, temperature)
+            shape = y.size()
+            _, ind = y.max(dim=-1)
+            y_hard = torch.zeros_like(y).view(-1, shape[-1])
+            y_hard.scatter_(1, ind.view(-1, 1), 1)
+            y_hard = y_hard.view(*shape)
+            return (y_hard - y).detach() + y
+
+        encoder_out = self.encoder(
+            src_tokens, src_lengths=src_lengths, return_all_hiddens=return_all_hiddens
         )
 
-
-class OurTransformerDecoder(TransformerDecoder):
-    """
-    Transformer decoder consisting of *args.decoder_layers* layers. Each layer
-    is a :class:`SparseTransformerDecoderLayer`.
-    Args:
-        args (argparse.Namespace): parsed command-line arguments
-        dictionary (~fairseq.data.Dictionary): decoding dictionary
-        embed_tokens (torch.nn.Embedding): output embedding
-        no_encoder_attn (bool, optional): whether to attend to encoder outputs
-            (default: False).
-    """
-
-    def __init__(self, args, dictionary, embed_tokens, no_encoder_attn=False):
-        super().__init__(args, dictionary=dictionary, embed_tokens=embed_tokens, no_encoder_attn=no_encoder_attn)
-        self.print_attn_score = args.print_attn_score
-
-    def forward(
-            self,
-            prev_output_tokens,
-            encoder_out=None,
-            incremental_state=None,
-            features_only: bool = False,
-            full_context_alignment: bool = False,
-            alignment_layer=None,
-            alignment_heads=None,
-            src_lengths=None,
-            return_all_hiddens=False,
-    ):
-        x, extra = self.extract_features(
+        decoder_out = self.decoder(
             prev_output_tokens,
             encoder_out=encoder_out,
-            incremental_state=incremental_state,
-            full_context_alignment=full_context_alignment,
+            features_only=features_only,
             alignment_layer=alignment_layer,
             alignment_heads=alignment_heads,
+            src_lengths=src_lengths,
+            return_all_hiddens=return_all_hiddens,
         )
-        if self.print_attn_score:
-            print(extra['attn'])
-        if not features_only:
-            x = self.output_layer(x)
-        return x, extra
+        logits = decoder_out[0]
+        tgt_len = logits.size(1)
+        batch_size = logits.size(0)
+        logits = gumbel_softmax(
+            logits.contiguous().view(tgt_len, batch_size, -1), temperature=temperature
+        )
+
+        return logits
+
+    def calc_gradient_penalty(self, real_data, fake_data, LAMBDA=10):
+        alpha = torch.rand([real_data.shape[0], 1, 1], device=real_data.device)
+        alpha = alpha.expand(real_data.size())
+
+        interpolates = alpha * real_data + ((1 - alpha) * fake_data)
+
+        interpolates = torch.autograd.Variable(interpolates, requires_grad=True)
+
+        interpolates = torch.einsum(
+            "ve,bcv -> bce",
+            self.discriminator.bert.embeddings.word_embeddings.weight,
+            interpolates,
+        )
+        disc_interpolates = self.discriminator(inputs_embeds=interpolates)[0][:, 0]
+
+        gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolates,
+                                        grad_outputs=torch.ones(disc_interpolates.size(),
+                                                                device=real_data.device),
+                                        create_graph=True, retain_graph=True, only_inputs=True)[0]
+        gradients = gradients.view(real_data.shape[0], -1)
+
+        # https://github.com/igul222/improved_wgan_training/blob/master/gan_language.py
+        slopes = torch.sqrt(torch.sum(gradients ** 2, dim=1) + 1e-12)
+        gradient_penalty = ((slopes - 1.) ** 2).mean() * LAMBDA
+
+        return gradient_penalty
 
 
-@register_model_architecture("our_transformer", "our_transformer")
-def transformer_base_architecture(args):
-    args.print_attn_score = getattr(args, "print_attn_score", False)
-    base_architecture(args)
-
-
-@register_model_architecture('our_transformer', 'transformer_base')
-def transformer_base(args):
+@register_model_architecture("transformer_gan", "transformer_gan_base")
+def transformer_gan(args):
     args.encoder_embed_dim = getattr(args, "encoder_embed_dim", 512)
     args.encoder_ffn_embed_dim = getattr(args, "encoder_ffn_embed_dim", 1024)
     args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 4)
@@ -234,17 +364,4 @@ def transformer_base(args):
     args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", 1024)
     args.decoder_attention_heads = getattr(args, "decoder_attention_heads", 4)
     args.decoder_layers = getattr(args, "decoder_layers", 4)
-    transformer_base_architecture(args)
-
-
-@register_model_architecture('our_transformer', 'transformer_large')
-def transformer_large(args):
-    args.encoder_embed_dim = getattr(args, "encoder_embed_dim", 512)
-    args.encoder_ffn_embed_dim = getattr(args, "encoder_ffn_embed_dim", 2048)
-    args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 8)
-    args.encoder_layers = getattr(args, "encoder_layers", 6)
-    args.decoder_embed_dim = getattr(args, "decoder_embed_dim", 512)
-    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", 2048)
-    args.decoder_attention_heads = getattr(args, "decoder_attention_heads", 8)
-    args.decoder_layers = getattr(args, "decoder_layers", 6)
     transformer_base_architecture(args)

@@ -7,13 +7,15 @@ CUDA_VISIBLE_DEVICES=$GPU fairseq-train \
     --arch $model_signature  \
     --dropout 0.2 \
     --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
-    --optimizer adam --lr 0.005 --lr-shrink 0.5 \
+    --optimizer adam --adam-betas '(0.9,0.98)' --clip-norm 0.0 \
+    --lr 0.005 --lr-scheduler inverse_sqrt --warmup-updates 4000 \
     --max-tokens 4096 \
     --save-dir checkpoints/$save_tag \
-    --validate-interval 3 \
+    --max-update 25000 --save-interval-updates 2000  --validate-interval 3 \
     --keep-interval-updates 10 \
     --keep-best-checkpoints 10 \
     --no-epoch-checkpoints \
+    --tensorboard-logdir tensorboard-logdir/$save_tag \
     --eval-bleu \
     --eval-bleu-args '{"beam": 4, "max_len_a": 1.2, "max_len_b": 10}' \
     --eval-bleu-detok moses \

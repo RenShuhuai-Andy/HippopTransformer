@@ -1,6 +1,6 @@
 model_signature=transformer_base
-GPU="0,1,2,3"
-save_tag=${model_signature}
+GPU="4,5,6,7"
+save_tag=${model_signature}_ppl
 
 CUDA_VISIBLE_DEVICES=$GPU fairseq-train \
     data/data-bin --share-all-embeddings \
@@ -22,6 +22,6 @@ CUDA_VISIBLE_DEVICES=$GPU fairseq-train \
     --eval-bleu-args '{"beam": 4, "max_len_a": 1.2, "max_len_b": 10}' \
     --eval-bleu-detok moses \
     --eval-bleu-remove-bpe \
-    --best-checkpoint-metric bleu --maximize-best-checkpoint-metric 2>&1 | tee -a logs/$save_tag.log
+    --best-checkpoint-metric ppl 2>&1 | tee -a logs/$save_tag.log
 
 
