@@ -1,8 +1,8 @@
-# Chinese Hip-pop Generation
+# HippopTransformer for Chinese Hip-pop Generation
 
-Project for PKU Deep Generative Models 2021 spring.
+Project for PKU [Deep Generative Models 2021 spring](https://deep-generative-models.github.io/).
 
-Achieve Chinese Hip-pop Generation with [Vanilla Transformer](https://arxiv.org/abs/1706.03762).
+Achieve Chinese Hip-pop Generation with LSTM, [Vanilla Transformer](https://arxiv.org/abs/1706.03762).
 
 ## Introduction
 
@@ -64,3 +64,11 @@ sh scripts/evaluate.sh -m transformer_base -c 0 -n 10
 
 ## Result
 
+|                       | BLEU |
+| --------------------- | ---- |
+| lstm | 11.78, 18.1/11.3/10.2/9.2 |
+| + average checkpoints| 13.12, 19.4/12.5/11.5/10.6 |
+| transformer_base | 13.56, 18.6/13.8/12.9/12.0 |
+| + average checkpoints| 13.71, 19.1/13.3/12.3/11.3 |
+| transformer_base_rl | **14.22**, 19.3/14.3/13.4/12.6 |
+| + average checkpoints| 12.79, 19.1/12.5/11.1/10.1 |
