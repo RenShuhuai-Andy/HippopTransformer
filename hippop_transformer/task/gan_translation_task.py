@@ -3,19 +3,10 @@ from fairseq.tasks.translation import TranslationTask
 from argparse import Namespace
 import json
 from fairseq.data import (
-    AppendTokenDataset,
-    ConcatDataset,
-    LanguagePairDataset,
-    PrependTokenDataset,
-    StripTokenDataset,
-    TruncateDataset,
-    data_utils,
     encoders,
-    indexed_dataset,
 )
 import torch
-import numpy as np
-from criterion.gan_loss import get_losses
+from ..criterion.gan_loss import get_losses
 
 
 @register_task("gan_hippop_translation")
@@ -68,10 +59,17 @@ class GanHippopTranslationTask(TranslationTask):
                     self.training_object = 'generator'
 
             # gen loss and dis loss
-            real_tgts = sample['net_input']['prev_output_tokens']
+            real_tgts = sample['net_input']['prev_output_tokens']  # [bsz, seq_len]
             fake_tgts = model.forward_generate_gumbel(**sample["net_input"])
+            fake_tgts = fake_tgts.contiguous().view(fake_tgts.size(1), fake_tgts.size(0), -1)  # [bsz, seq_len, vocab_size]
+            embedding_matrix = model.discriminator.bert.embeddings.word_embeddings.weight
+            fake_embs = torch.einsum(
+                "ve,bcv -> bce",
+                embedding_matrix,
+                fake_tgts,
+            )
             bert_logits_real = model.discriminator(input_ids=real_tgts, return_dict=True)['logits']
-            bert_logits_fake = model.discriminator(input_ids=fake_tgts, return_dict=True)['logits']
+            bert_logits_fake = model.discriminator(inputs_embeds=fake_embs, return_dict=True)['logits']
             gen_loss, dis_loss = get_losses(bert_logits_real, bert_logits_fake, model.args.discriminator_bert_loss_type)
 
             if self.training_object == 'generator':

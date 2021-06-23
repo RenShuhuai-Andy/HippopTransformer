@@ -1,4 +1,4 @@
-from model.transformer import OurTransformerModel
+from hippop_transformer.model.transformer import OurTransformerModel
 import jieba
 import argparse
 

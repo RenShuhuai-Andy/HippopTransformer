@@ -4,7 +4,7 @@ save_tag=${model_signature}_ppl
 
 CUDA_VISIBLE_DEVICES=$GPU fairseq-train \
     data/data-bin --share-all-embeddings \
-    --user-dir task --fp16  \
+    --user-dir hippop_transformer --fp16  \
     --arch $model_signature \
     --task translation \
     --optimizer adam --adam-betas '(0.9,0.98)' --clip-norm 0.0 \

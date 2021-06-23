@@ -14,20 +14,16 @@
 
 import sys
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
 sys.path.append("utils")
 from transformers import (
     BertConfig,
     BertForMaskedLM,
-    PreTrainedTokenizer,
-    PreTrainedModel,
-    AdamW,
     BertForSequenceClassification
 )
-from fairseq.models.transformer import TransformerModel, base_architecture
-from model.transformer import transformer_base_architecture
+from fairseq.models.transformer import TransformerModel
+from .transformer import transformer_base_architecture
 from fairseq import utils
 from fairseq.models import (
     register_model,
@@ -272,8 +268,8 @@ class TransformerGAN(TransformerModel):
             src_tokens,
             src_lengths,
             prev_output_tokens,
-            return_all_hiddens: bool = False,
-            features_only: bool = True,
+            return_all_hiddens: bool = True,
+            features_only: bool = False,
             alignment_layer: Optional[int] = None,
             alignment_heads: Optional[int] = None,
             temperature=1):  # TODO

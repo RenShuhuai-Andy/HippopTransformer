@@ -1,6 +1,6 @@
 from fairseq.tasks import register_task
 from fairseq.tasks.translation import TranslationTask
-from model.rhyme_seq_generator import RhymeSequenceGenerator
+from ..model.rhyme_seq_generator import RhymeSequenceGenerator
 import numpy as np
 
 
