@@ -2,7 +2,7 @@
 
 Project for PKU [Deep Generative Models 2021 spring](https://deep-generative-models.github.io/).
 
-Achieve Chinese Hip-pop Generation with LSTM, [Vanilla Transformer](https://arxiv.org/abs/1706.03762).
+Achieve Chinese Hip-pop Generation with (1) [LSTM](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735), (2) [Vanilla Transformer](https://arxiv.org/abs/1706.03762), (3) Vanilla Transformer with [RL](https://www.aclweb.org/anthology/P19-1193/) and (4) [Transformer-GAN](https://assets.amazon.science/36/e6/95f355a24df983dfcd2fe6b5ad2a/symbolic-music-generation-with-transformer-gans.pdf).
 
 ## Introduction
 
@@ -10,9 +10,9 @@ Achieve Chinese Hip-pop Generation with LSTM, [Vanilla Transformer](https://arxi
 
 | Dataset | # Examples | Avg Length (src/tgt) | Max Length (src/tgt) |
 | ----------- | ---------- | ------------------ | ------------------ |
-| Train       | 86,906    |       |             |
-| Dev         | 4,828     |       |            |
-| Test        | 4,828     |       |           |
+| Train       | 86,906    |    13.64 / 13.66   |       78 / 81      |
+| Dev         | 4,828     |    13.79 / 13.71   |      77 / 48      |
+| Test        | 4,828     |   13.77 / 13.67    |      83 / 68     |
 
 ## Prepare environment
 
@@ -51,24 +51,24 @@ sh scripts/evaluate.sh -m transformer_base -c 0 -n 10
 `python local_demo.py`
 
 ## Model Architecture
-|Model Architecture| Transformer-Base | Transformer-Large|
-| --------------------- | ---- | ---- |
-|Encoder Embedding Size |512 |512|
-|Encoder Feed-forward Size |1024| 2048|
-|Encoder Attention Head Size |4| 8|
-|Encoder Layer Number |4| 6|
-|Decoder Embedding Size |512| 512|
-|Decoder Feed-forward Size |1024 |2048|
-|Decoder Attention Head Size |4 |8|
-|Decoder Layer Number |4 |6|
+|Model Architecture| LSTM | Transformer-Base | Transformer-Large|
+| --------------------- | ---- | ---- | ---- |
+|Encoder Embedding Size | 256 | 512 |512|
+|Encoder Feed-forward Size | 512 | 1024| 2048|
+|Encoder Attention Head Size | - |4| 8|
+|Encoder Layer Number | 1 | 4| 6|
+|Decoder Embedding Size | 256 | 512| 512|
+|Decoder Feed-forward Size | 512 | 1024 |2048|
+|Decoder Attention Head Size | - | 4 |8|
+|Decoder Layer Number | 1 | 4 |6|
 
 ## Result
 
-|                       | BLEU |
-| --------------------- | ---- |
-| lstm | 11.78, 18.1/11.3/10.2/9.2 |
-| + average checkpoints| 13.12, 19.4/12.5/11.5/10.6 |
-| transformer_base | 13.56, 18.6/13.8/12.9/12.0 |
-| + average checkpoints| 13.71, 19.1/13.3/12.3/11.3 |
-| transformer_base_rl | **14.22**, 19.3/14.3/13.4/12.6 |
-| + average checkpoints| 12.79, 19.1/12.5/11.1/10.1 |
+|                       | BLEU | Rhyme Rate |
+| --------------------- | ---- | ---- |
+| lstm | 11.78, 18.1/11.3/10.2/9.2 | 0.1375 |
+| + average checkpoints| 13.12, 19.4/12.5/11.5/10.6 | 0.1433 |
+| transformer_base | 13.56, 18.6/13.8/12.9/12.0 | 0.2129 |
+| + average checkpoints| 13.71, 19.1/13.3/12.3/11.3 | 0.2270 |
+| transformer_base_rl | **14.22**, 19.3/14.3/13.4/12.6 | 0.2171 |
+| + average checkpoints| 12.79, 19.1/12.5/11.1/10.1 | **0.2336** |
