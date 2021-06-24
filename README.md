@@ -1,18 +1,23 @@
 # HippopTransformer for Chinese Hip-pop Generation
 
 <p align="center">
-  <img align="middle" src="./assets/demo.gif" alt="The main figure"/>
+  <img align="middle" src="./assets/comparison.png" alt="The comparison figure"/>
 </p>
 
 Project for PKU [Deep Generative Models 2021 spring](https://deep-generative-models.github.io/).
 
-Achieve Chinese Hip-pop Generation with (1) [LSTM](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735), (2) [Vanilla Transformer](https://arxiv.org/abs/1706.03762), (3) Vanilla Transformer with [RL](https://www.aclweb.org/anthology/P19-1193/) and (4) [Transformer-GAN](https://assets.amazon.science/36/e6/95f355a24df983dfcd2fe6b5ad2a/symbolic-music-generation-with-transformer-gans.pdf).
+Achieve Chinese Hip-pop Generation with (1) [LSTM](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735), (2) [Vanilla Transformer](https://arxiv.org/abs/1706.03762), (3) Vanilla Transformer with [RL](https://www.aclweb.org/anthology/P19-1193/) and (4) [Transformer-GAN](https://assets.amazon.science/36/e6/95f355a24df983dfcd2fe6b5ad2a/symbolic-music-generation-with-transformer-gans.pdf). 
+All implements are based on [fairseq](https://github.com/pytorch/fairseq).
 
 ## Introduction
 
 ### Dataset
+The [lyric data](data/origin_lyric) is crawled from [Netease Cloud Music](https://music.163.com).
+The data is first segmented with [jieba](https://github.com/fxsjy/jieba), then is preprocessed in to sentence pair format. 
 
-| Dataset | # Examples | Avg Length (src/tgt) | Max Length (src/tgt) |
+The statistics of the datasets:
+
+| Dataset | # Pair | Avg Length (src/tgt) | Max Length (src/tgt) |
 | ----------- | ---------- | ------------------ | ------------------ |
 | Train       | 86,906    |    13.64 / 13.66   |       78 / 81      |
 | Dev         | 4,828     |    13.79 / 13.71   |      77 / 48      |
@@ -51,6 +56,10 @@ python data/generate_rhyme_table.py
         --checkpoint_dict checkpoints/ \
         --checkpoint_file transformer_base_rl_checkpoint_best.pt
     ```
+
+<p align="center">
+  <img align="middle" src="./assets/demo.gif" alt="The demo figure"/>
+</p>
 
 ## Train
 
