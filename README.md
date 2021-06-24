@@ -1,5 +1,9 @@
 # HippopTransformer for Chinese Hip-pop Generation
 
+<p align="center">
+  <img align="middle" src="./assets/demo.gif" alt="The main figure"/>
+</p>
+
 Project for PKU [Deep Generative Models 2021 spring](https://deep-generative-models.github.io/).
 
 Achieve Chinese Hip-pop Generation with (1) [LSTM](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735), (2) [Vanilla Transformer](https://arxiv.org/abs/1706.03762), (3) Vanilla Transformer with [RL](https://www.aclweb.org/anthology/P19-1193/) and (4) [Transformer-GAN](https://assets.amazon.science/36/e6/95f355a24df983dfcd2fe6b5ad2a/symbolic-music-generation-with-transformer-gans.pdf).
@@ -31,6 +35,23 @@ sh scripts/process.sh
 python data/generate_rhyme_table.py
 ```
 
+## Interactive Demo
+1. Process the data.
+
+2. Download one of the pre-trained checkpoints from [releases link](https://github.com/RenShuhuai-Andy/HippopTransformer/releases/tag/v0.1):
+    ```bash
+    mkdir checkpoints
+    wget -P checkpoints/ https://github.com/RenShuhuai-Andy/HippopTransformer/releases/download/v0.1/transformer_base_rl_checkpoint_best.pt
+    ```
+
+3. Run the demo:
+
+    ```bash
+    python local_demo.py \
+        --checkpoint_dict checkpoints/ \
+        --checkpoint_file transformer_base_rl_checkpoint_best.pt
+    ```
+
 ## Train
 
 ```
@@ -45,10 +66,6 @@ sh scripts/evaluate.sh -m transformer_base -c 0 -n 10
 - `-m` denotes the model architecture.
 - `-c` denotes the index of CUDA device.
 - `-n` denotes the number of checkpoints for average.
-
-## Interactive
-
-`python local_demo.py`
 
 ## Model Architecture
 |Model Architecture| LSTM | Transformer-Base | Transformer-Large|

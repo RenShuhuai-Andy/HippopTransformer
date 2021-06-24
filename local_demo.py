@@ -4,12 +4,13 @@ import argparse
 
 parse = argparse.ArgumentParser()
 parse.add_argument('--checkpoint_dict', type=str, default='checkpoints/transformer_base/')
+parse.add_argument('--checkpoint_file', type=str, default='checkpoint_best.pt')
 parse.add_argument('--task', type=str, default='hippop')
 args = parse.parse_args()
 
 hippop_generator = OurTransformerModel.from_pretrained(
     args.checkpoint_dict,
-    checkpoint_file='checkpoint_best.pt',
+    checkpoint_file=args.checkpoint_file,
     data_name_or_path='data/data-bin',
     bpe='subword_nmt',
     bpe_codes='data/src_tgt/code',
